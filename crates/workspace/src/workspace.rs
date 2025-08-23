@@ -5006,6 +5006,7 @@ impl Workspace {
         self.active_call.as_ref().map(|(call, _)| call)
     }
 
+    #[cfg(feature = "call")]
     fn on_active_call_event(
         &mut self,
         _: &Entity<ActiveCall>,
@@ -5020,6 +5021,16 @@ impl Workspace {
             }
             _ => {}
         }
+    }
+
+    #[cfg(not(feature = "call"))]
+    fn on_active_call_event(
+        &mut self,
+        _: &Entity<ActiveCall>,
+        _: &call::room::Event,
+        _: &mut Window,
+        _: &mut Context<Self>,
+    ) {
     }
 
     pub fn database_id(&self) -> Option<WorkspaceId> {

@@ -38,7 +38,7 @@ pub struct LogStore {
 }
 
 struct ProjectState {
-    _subscriptions: [gpui::Subscription; 3],
+    _subscriptions: [gpui::Subscription; 2],
 }
 
 trait Message: AsRef<str> {
@@ -317,13 +317,7 @@ impl LogStore {
     }
 
     pub fn add_project(&mut self, project: &Entity<Project>, cx: &mut Context<Self>) {
-        log::error!(
-            "?????????????? ssh: {} local: {}",
-            project.read(cx).is_via_ssh(),
-            project.read(cx).is_local()
-        );
         let weak_project = project.downgrade();
-        let subscription_weak_project = weak_project.clone();
         self.projects.insert(
             project.downgrade(),
             ProjectState {
@@ -393,29 +387,6 @@ impl LogStore {
                                 }
                             }
                             _ => {}
-                        }
-                    }),
-                    cx.subscribe(&cx.entity(), move |_, _, e, cx| {
-                        log::error!("||??????????????????????????????????????||||||@@@@|| {e:?}");
-                        match e {
-                            Event::NewServerLogEntry { id, kind, text } => {
-                                subscription_weak_project
-                                    .update(cx, |project, cx| {
-                                        if let Some((client, project_id)) =
-                                            project.lsp_store().read(cx).downstream_client()
-                                        {
-                                            client
-                                                .send(proto::LanguageServerLog {
-                                                    project_id,
-                                                    language_server_id: id.to_proto(),
-                                                    message: text.clone(),
-                                                    log_type: Some(kind.to_proto()),
-                                                })
-                                                .log_err();
-                                        };
-                                    })
-                                    .ok();
-                            }
                         }
                     }),
                 ],
@@ -855,11 +826,28 @@ impl LspLogView {
 
                 cx.notify();
             });
+
+        let weak_lsp_store = project.read(cx).lsp_store().downgrade();
         let events_subscriptions =
             cx.subscribe_in(&log_store, window, move |log_view, _, e, window, cx| {
                 log::error!("||||||||@@@@|| {e:?}");
                 match e {
                     Event::NewServerLogEntry { id, kind, text } => {
+                        weak_lsp_store
+                            .update(cx, |lsp_store, _| {
+                                if let Some((client, project_id)) = lsp_store.downstream_client() {
+                                    client
+                                        .send(proto::LanguageServerLog {
+                                            project_id,
+                                            language_server_id: id.to_proto(),
+                                            message: text.clone(),
+                                            log_type: Some(kind.to_proto()),
+                                        })
+                                        .log_err();
+                                };
+                            })
+                            .ok();
+
                         if log_view.current_server_id == Some(*id)
                             && LogKind::from_server_log_type(kind) == log_view.active_entry_kind
                         {

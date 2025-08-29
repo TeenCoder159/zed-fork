@@ -171,7 +171,6 @@ pub(crate) trait Platform: 'static {
     fn restart(&self, binary_path: Option<PathBuf>);
     fn activate(&self, ignoring_other_apps: bool);
     fn hide(&self);
-    fn show(&self);
     fn hide_other_apps(&self);
     fn unhide_other_apps(&self);
 

@@ -562,16 +562,8 @@ impl Platform for MacPlatform {
 
     fn hide(&self) {
         unsafe {
-            let app = NSApplication::sharedApplication(nil);
-            let _: () = msg_send![app, hide: nil];
-        }
-    }
-
-    fn show(&self) {
-        unsafe {
-            // Get app instance
-            let app = NSApplication::sharedApplication(nil);
-            let _: () = msg_send![app, unhide: nil];
+            let app: id = NSApplication::sharedApplication(nil);
+            let _: () = msg_send![app, performSelectorOnMainThread: sel!(hide:) withObject:nil waitUntilDone:YES];
         }
     }
 

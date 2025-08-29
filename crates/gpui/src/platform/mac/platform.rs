@@ -567,6 +567,14 @@ impl Platform for MacPlatform {
         }
     }
 
+    fn show(&self) {
+        unsafe {
+            // Get app instance
+            let app = NSApplication::sharedApplication(nil);
+            let _: () = msg_send![app, unhide: nil];
+        }
+    }
+
     fn hide_other_apps(&self) {
         unsafe {
             let app = NSApplication::sharedApplication(nil);
